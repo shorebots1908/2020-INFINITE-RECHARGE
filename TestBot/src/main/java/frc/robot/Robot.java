@@ -71,23 +71,28 @@ public class Robot extends TimedRobot {
 		throttle = (throttle + 1) / 2;
 
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
-		_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn);
-		_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn);
+
 	
 		if (auto)
         {
           if (m_LimelightHasValidTarget)
           {
-                m_Drive.arcadeDrive(m_LimelightDriveCommand,m_LimelightSteerCommand);
+				_leftMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, +m_LimelightSteerCommand);
+				_rightMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, -m_LimelightSteerCommand);
+	
           }
           else
           {
-                m_Drive.arcadeDrive(0.0,0.0);
+				_leftMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, +0);
+				_rightMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, -0);
+
           }
         }
         else
         {
-          m_Drive.arcadeDrive(drive,steer);
+			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle);
+			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
+		
 		}
 	}
 
