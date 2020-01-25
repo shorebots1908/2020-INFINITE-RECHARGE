@@ -31,6 +31,9 @@ public class Robot extends TimedRobot {
   private final TalonSRX _leftMaster = new TalonSRX(1);
   private final TalonSRX _rightMaster = new TalonSRX(2);
   private final Joystick _gamepad = new Joystick(0);
+  private boolean m_LimelightHasValidTarget = false;
+  private double m_LimelightDriveCommand = 0.0;
+  private double m_LimelightSteerCommand = 0.0;
 
   @Override
 	public void teleopInit(){
@@ -127,7 +130,7 @@ public void Update_Limelight_Tracking()
         m_LimelightHasValidTarget = true;
 
         // Start with proportional steering
-        double steer_cmd = tx * STEER_K;
+        double steer_cmd = tx * forward;
         m_LimelightSteerCommand = steer_cmd;
 
         // try to drive forward until the target area reaches our desired area
