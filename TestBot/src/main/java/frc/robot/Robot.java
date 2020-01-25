@@ -61,6 +61,22 @@ public class Robot extends TimedRobot {
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 		_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn);
 		_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn);
+	
+		if (auto)
+        {
+          if (m_LimelightHasValidTarget)
+          {
+                m_Drive.arcadeDrive(m_LimelightDriveCommand,m_LimelightSteerCommand);
+          }
+          else
+          {
+                m_Drive.arcadeDrive(0.0,0.0);
+          }
+        }
+        else
+        {
+          m_Drive.arcadeDrive(drive,steer);
+		}
 	}
 
 	/** Deadband 5 percent, used on the gamepad */
