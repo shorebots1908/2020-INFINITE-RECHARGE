@@ -8,7 +8,6 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.PWMVictorSPX;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
@@ -16,6 +15,12 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.SpeedControllerGroup;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
+import edu.wpi.first.networktables.*;
 
 
 /**
@@ -50,10 +55,14 @@ public class Robot extends TimedRobot {
 
   @Override
 	public void teleopPeriodic() {		
+		/* Limelight processing */
+		Update_Limelight_Tracking();
+		
 		/* Gamepad processing */
 		double forward = -1 * _gamepad.getY();
 		double turn = _gamepad.getTwist();
-		double throttle = _gamepad.getThrottle();		
+		double throttle = _gamepad.getThrottle();
+		boolean auto = _gamepad.getRawButton(1);		
 		forward = Deadband(forward);
 		turn = Deadband(turn);
 		throttle = (throttle + 1) / 2;
