@@ -4,7 +4,7 @@
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
-/* Hello Testing*/
+
 package frc.robot;
 
 import edu.wpi.first.wpilibj.Joystick;
@@ -52,13 +52,15 @@ public class Robot extends TimedRobot {
 	public void teleopPeriodic() {		
 		/* Gamepad processing */
 		double forward = -1 * _gamepad.getY();
-		double turn = _gamepad.getTwist();		
+		double turn = _gamepad.getTwist();
+		double throttle = _gamepad.getThrottle();		
 		forward = Deadband(forward);
 		turn = Deadband(turn);
+		throttle = (throttle + 1) / 2;
 
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
-		_leftMaster.set(ControlMode.PercentOutput, forward, DemandType.ArbitraryFeedForward, +turn);
-		_rightMaster.set(ControlMode.PercentOutput, forward, DemandType.ArbitraryFeedForward, -turn);
+		_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn);
+		_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn);
 	}
 
 	/** Deadband 5 percent, used on the gamepad */
