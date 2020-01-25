@@ -62,13 +62,13 @@ public class Robot extends TimedRobot {
 		Update_Limelight_Tracking();
 		
 		/* Gamepad processing */
-		double forward = -1 * _gamepad.getY();
+		double forward = _gamepad.getY();
 		double turn = _gamepad.getTwist();
 		double throttle = _gamepad.getThrottle();
 		boolean auto = _gamepad.getRawButton(1);		
 		forward = Deadband(forward);
 		turn = Deadband(turn);
-		throttle = (throttle + 1) / 2;
+		throttle = (throttle - 1) / 2;
 
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 
@@ -83,15 +83,15 @@ public class Robot extends TimedRobot {
           }
           else
           {
-				_leftMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, +0);
-				_rightMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, -0);
+				_leftMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, -0);
+				_rightMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, +0);
 
           }
         }
         else
         {
-			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle);
-			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
+			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
+			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle);
 		
 		}
 	}
@@ -117,7 +117,7 @@ public class Robot extends TimedRobot {
 		// These numbers must be tuned for your Robot!  Be careful!
 		final double STEER_K = 0.03;                    // how hard to turn toward the target
 		final double DRIVE_K = 0.26;                    // how hard to drive fwd toward the target
-		final double DESIRED_TARGET_AREA = 13.0;        // Area of the target when the robot reaches the wall
+		final double DESIRED_TARGET_AREA = 3.0;        // Area of the target when the robot reaches the wall
 		final double MAX_DRIVE = 0.7;                   // Simple speed limit so we don't drive too fast
 
 		double tv = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tv").getDouble(0);
