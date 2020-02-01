@@ -32,6 +32,7 @@ public class Robot extends TimedRobot {
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
   private double m_LimelightSteerCommand = 0.0;
+  private boolean isForward = false;
   Gyro gyro = new ADXRS450_Gyro();
 
   @Override
@@ -49,8 +50,8 @@ public class Robot extends TimedRobot {
 		_rightMaster.setNeutralMode(NeutralMode.Brake);
 		
 		/* Configure output direction */
-		_leftMaster.setInverted(false);
-		_rightMaster.setInverted(true);
+		_leftMaster.setInverted(true);
+		_rightMaster.setInverted(false);
 
 		gyro.reset();
 		
@@ -67,12 +68,17 @@ public class Robot extends TimedRobot {
 		double turn = _gamepad.getTwist();
 		double throttle = _gamepad.getThrottle();
 		boolean auto = _gamepad.getRawButton(1);		
-		forward = Deadband(forward);
-		turn = Deadband(turn);
+		forward = -Deadband(forward, 0.05);
+		turn = Deadband(turn, 0.4);
+		SmartDashboard.putNumber("Pre-Throttle", throttle);
 		throttle = (throttle - 1) / 2;
+		
 
 		SmartDashboard.putNumber("Gryo angle", gyro.getRate());
-
+		SmartDashboard.putNumber("Throttle", throttle);
+		SmartDashboard.putNumber("Throttle Math", forward * throttle);
+		SmartDashboard.putNumber("forward", forward);
+		SmartDashboard.putNumber("turn", turn);
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 
 	
@@ -91,17 +97,26 @@ public class Robot extends TimedRobot {
 			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
 			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle);
 		}
+		if (forward > 0 && turn == 0) {
+			isForward = true; 
+			
+		} else{
+			isForward = false;
+		}
+
+		SmartDashboard.putBoolean("isForward", isForward);
 	}
 
 	/** Deadband 5 percent, used on the gamepad */
-	double Deadband(double value) {
+	double Deadband(double value, double deadband) {
+
 		/* Upper deadband */
-		if (value >= +0.05){
+		if (value >= +deadband){
 			return value;
 		}			
 		
 		/* Lower deadband */
-		if (value <= -0.05){
+		if (value <= -deadband){
 			return value;
 		}			
 		
