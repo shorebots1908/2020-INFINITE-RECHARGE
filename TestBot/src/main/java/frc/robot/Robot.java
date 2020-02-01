@@ -7,7 +7,11 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.TimedRobot;
 /* import edu.wpi.first.wpilibj.drive.DifferentialDrive; */
 
@@ -28,6 +32,7 @@ import edu.wpi.first.networktables.*;
  * Runs the motors with arcade steering.
  */
 public class Robot extends TimedRobot {
+  Gyro gyro = new ADXRS450_Gyro(SPI.Port.kMXP);
   private final TalonSRX _leftMaster = new TalonSRX(1);
   private final TalonSRX _rightMaster = new TalonSRX(2);
   private final Joystick _gamepad = new Joystick(0);
@@ -54,12 +59,15 @@ public class Robot extends TimedRobot {
 		_rightMaster.setInverted(true);
 		
 		System.out.println("This is Arcade Drive using Arbitrary Feed Forward.");
+
+		gyro.reset();
 	}
 
   @Override
 	public void teleopPeriodic() {		
 		/* Limelight processing */
 		Update_Limelight_Tracking();
+		SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
 		
 		/* Gamepad processing */
 		double forward = _gamepad.getY();
