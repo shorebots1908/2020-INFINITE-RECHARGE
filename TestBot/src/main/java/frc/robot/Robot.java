@@ -16,10 +16,10 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
-/* import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
-import edu.wpi.first.wpilibj.GenericHID.Hand; */
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.networktables.*;
 
 
@@ -147,6 +147,6 @@ public class Robot extends TimedRobot {
 		{
 			drive_cmd = MAX_DRIVE;
 		}
-		m_LimelightDriveCommand = drive_cmd;:
+		m_LimelightDriveCommand = drive_cmd;
 	}
 }
