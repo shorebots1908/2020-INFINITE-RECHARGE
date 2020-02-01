@@ -35,6 +35,12 @@ public class Robot extends TimedRobot {
   private boolean isForward = false;
   Gyro gyro = new ADXRS450_Gyro();
 
+  // Drive PIDS
+  final double STEER_K = 0.03;                    // how hard to turn toward the target
+  final double DRIVE_K = 0.26;                    // how hard to drive fwd toward the target
+  final double DESIRED_TARGET_AREA = 3.0;         // Area of the target when the robot reaches the wall
+  final double MAX_DRIVE = 0.7;                   // Simple speed limit so we don't drive too fast
+
   @Override
 	public void teleopInit(){
 		/* Ensure motor output is neutral during init */
@@ -81,6 +87,18 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("turn", turn);
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 
+		if (forward > 0 && turn == 0) {
+			if(!isForward){
+				gyro.reset();
+				isForward = true;
+			} else {
+				if(gyro.getAngle() != 0){
+					turn = gyro.getAngle() * STEER_K;
+				}
+			}			
+		} else{
+			isForward = false;
+		}
 	
 		if (auto)
         {
@@ -96,12 +114,6 @@ public class Robot extends TimedRobot {
         } else  {
 			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
 			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle);
-		}
-		if (forward > 0 && turn == 0) {
-			isForward = true; 
-			
-		} else{
-			isForward = false;
 		}
 
 		SmartDashboard.putBoolean("isForward", isForward);
@@ -128,12 +140,6 @@ public class Robot extends TimedRobot {
 
 	public void Update_Limelight_Tracking()
 	{
-		// These numbers must be tuned for your Robot!  Be careful!
-		final double STEER_K = 0.03;                    // how hard to turn toward the target
-		final double DRIVE_K = 0.26;                    // how hard to drive fwd toward the target
-		final double DESIRED_TARGET_AREA = 3.0;         // Area of the target when the robot reaches the wall
-		final double MAX_DRIVE = 0.7;                   // Simple speed limit so we don't drive too fast
-
 		double tv = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tv").getDouble(0);
 		double tx = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
 		double ty = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
