@@ -7,9 +7,13 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 /* import edu.wpi.first.wpilibj.drive.DifferentialDrive; */
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -34,6 +38,7 @@ public class Robot extends TimedRobot {
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
   private double m_LimelightSteerCommand = 0.0;
+  Gyro gyro = new ADXRS450_Gyro(); /* SPI.Port.kMXP */
 
   @Override
 	public void teleopInit(){
@@ -52,6 +57,8 @@ public class Robot extends TimedRobot {
 		/* Configure output direction */
 		_leftMaster.setInverted(false);
 		_rightMaster.setInverted(true);
+
+		gyro.reset();
 		
 		System.out.println("This is Arcade Drive using Arbitrary Feed Forward.");
 	}
@@ -60,6 +67,7 @@ public class Robot extends TimedRobot {
 	public void teleopPeriodic() {		
 		/* Limelight processing */
 		Update_Limelight_Tracking();
+		SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
 		
 		/* Gamepad processing */
 		double forward = _gamepad.getY();
@@ -147,6 +155,7 @@ public class Robot extends TimedRobot {
 		{
 			drive_cmd = MAX_DRIVE;
 		}
-		m_LimelightDriveCommand = drive_cmd;:
+		m_LimelightDriveCommand = drive_cmd;
 	}
+	
 }
