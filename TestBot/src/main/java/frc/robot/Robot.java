@@ -18,13 +18,17 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
-/* import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.TimedRobot;
+/* import edu.wpi.first.wpilibj.drive.DifferentialDrive; */
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.SpeedControllerGroup;
-import edu.wpi.first.wpilibj.GenericHID.Hand; */
-import edu.wpi.first.networktables.*;
 
 
 /**
@@ -38,7 +42,9 @@ public class Robot extends TimedRobot {
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
   private double m_LimelightSteerCommand = 0.0;
-  Gyro gyro = new ADXRS450_Gyro(); /* SPI.Port.kMXP */
+  Gyro gyro = new ADXRS450_Gyro();
+
+
 
   @Override
 	public void teleopInit(){
@@ -61,6 +67,7 @@ public class Robot extends TimedRobot {
 		gyro.reset();
 		
 		System.out.println("This is Arcade Drive using Arbitrary Feed Forward.");
+		gyro.reset();
 	}
 
   @Override
@@ -77,6 +84,8 @@ public class Robot extends TimedRobot {
 		forward = Deadband(forward);
 		turn = Deadband(turn);
 		throttle = (throttle - 1) / 2;
+
+		SmartDashboard.putNumber("Gryo angle", gyro.getRate());
 
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 
