@@ -93,13 +93,15 @@ public class Robot extends TimedRobot {
 				isForward = true;
 			} else {
 				if(gyro.getAngle() != 0){
-					turn = gyro.getAngle() * STEER_K;
+					turn = -(gyro.getAngle() * STEER_K);
 				}
 			}			
 		} else{
 			isForward = false;
 		}
-	
+		
+		SmartDashboard.putNumber("turn after gyro", turn);
+
 		if (auto)
         {
           if (m_LimelightHasValidTarget){
@@ -112,8 +114,8 @@ public class Robot extends TimedRobot {
 
           }
         } else  {
-			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
-			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle);
+			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle );
+			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
 		}
 
 		SmartDashboard.putBoolean("isForward", isForward);
