@@ -10,10 +10,15 @@ package frc.robot;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.I2C;
+import edu.wpi.first.wpilibj.util.Color;
+import com.revrobotics.ColorSensorV3;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -34,6 +39,11 @@ public class Robot extends TimedRobot {
   private double m_LimelightSteerCommand = 0.0;
   private boolean isForward = false;
   Gyro gyro = new ADXRS450_Gyro();
+  Servo BruhServo = new Servo(1);
+  AnalogInput analog = new AnalogInput(0);
+  private final I2C.Port i2cPort = I2C.Port.kOnboard;
+  private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
+
 
   // Drive PIDS
   final double STEER_K = 0.03;                    // how hard to turn toward the target
@@ -78,14 +88,32 @@ public class Robot extends TimedRobot {
 		turn = Deadband(turn, 0.4);
 		SmartDashboard.putNumber("Pre-Throttle", throttle);
 		throttle = (throttle - 1) / 2;
-		
+		boolean servoButton = _gamepad.getRawButton(2);
+		Color detectedColor = m_colorSensor.getColor();
+		double IR = m_colorSensor.getIR();
+		int proximity = m_colorSensor.getProximity();
+	
 
 		SmartDashboard.putNumber("Gryo angle", gyro.getRate());
 		SmartDashboard.putNumber("Throttle", throttle);
 		SmartDashboard.putNumber("Throttle Math", forward * throttle);
 		SmartDashboard.putNumber("forward", forward);
 		SmartDashboard.putNumber("turn", turn);
+		SmartDashboard.putNumber("Analog value" ,analog.getValue());
+		SmartDashboard.putNumber("Analog voltage" ,analog.getVoltage());
+		SmartDashboard.putNumber("Red", detectedColor.red);
+    	SmartDashboard.putNumber("Green", detectedColor.green);
+    	SmartDashboard.putNumber("Blue", detectedColor.blue);
+    	SmartDashboard.putNumber("IR", IR);
+		SmartDashboard.putNumber("Proximity", proximity);
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
+
+		if (servoButton) {
+			BruhServo.setAngle(75);
+		}
+		else {
+			BruhServo.setAngle(5);
+		}
 
 		if (forward > 0 && turn == 0) {
 			if(!isForward){
