@@ -41,8 +41,9 @@ public class Robot extends TimedRobot {
   private double m_LimelightDriveCommand = 0.0;
   private double m_LimelightSteerCommand = 0.0;
   private boolean isForward = false;
+  private boolean isTurn = false;
   Gyro gyro = new ADXRS450_Gyro();
-  Servo BruhServo = new Servo(1);
+  Servo BruhServo = new Servo(0);
   AnalogInput analog = new AnalogInput(0);
   private final I2C.Port i2cPort = I2C.Port.kOnboard;
   private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
@@ -107,6 +108,9 @@ public class Robot extends TimedRobot {
 		throttle = (throttle - 1) / 2;
 		boolean servoButton = _gamepad.getRawButton(2);
 		Color detectedColor = m_colorSensor.getColor();
+		boolean bruh = _gamepad.getRawButton(3);
+		boolean bruh2 = _gamepad.getRawButton(4);
+		double bruhTurn = 0;
 		
 		double IR = m_colorSensor.getIR();
 		int proximity = m_colorSensor.getProximity();
@@ -150,8 +154,9 @@ public class Robot extends TimedRobot {
 		else {
 			BruhServo.setAngle(5);
 		}
+		SmartDashboard.putBoolean("ServoButton", servoButton);
 
-		if (forward > 0 && turn == 0) {
+		if (forward != 0 && turn == 0) {
 			if(!isForward){
 				gyro.reset();
 				isForward = true;
@@ -164,7 +169,20 @@ public class Robot extends TimedRobot {
 			isForward = false;
 		}
 		
+		if (bruh) {
+			if(!isTurn){				
+				gyro.reset();
+				bruhTurn = gyro.getAngle() - 90;
+				isTurn = true;
+			} else {				
+				if(bruhTurn != gyro.getAngle()){
+					turn = -(gyro.getAngle() * STEER_K);
+				}
+			}			
+		}
 		SmartDashboard.putNumber("turn after gyro", turn);
+		SmartDashboard.putNumber("BruhTurn", bruhTurn);
+		SmartDashboard.putBoolean("isTurn", isTurn);
 
 		if (auto)
         {
