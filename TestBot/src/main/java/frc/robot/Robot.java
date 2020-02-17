@@ -11,6 +11,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.Servo;
+import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -19,10 +20,12 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
 
+import com.revrobotics.CANSparkMax;
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorSensorV3;
-
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
@@ -34,8 +37,8 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
  * Runs the motors with arcade steering.
  */
 public class Robot extends TimedRobot {
-  private final TalonSRX _leftMaster = new TalonSRX(1);
-  private final TalonSRX _rightMaster = new TalonSRX(2);
+  private final CANSparkMax _leftMaster = new CANSparkMax(7, MotorType.kBrushless);
+  private final CANSparkMax _rightMaster = new CANSparkMax(8, MotorType.kBrushless);
   private final Joystick _gamepad = new Joystick(0);
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
@@ -48,7 +51,15 @@ public class Robot extends TimedRobot {
   private final I2C.Port i2cPort = I2C.Port.kOnboard;
   private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
   private final ColorMatch m_colorMatcher = new ColorMatch();
+  //public Spark ledStrip = new Spark(1);
   
+  private final TalonSRX Shooter = new TalonSRX(6);
+  private final TalonSRX Elevator_Top = new TalonSRX(5);
+  private final TalonSRX Elevator_Butt = new TalonSRX(4);
+  private final TalonSRX Climb = new TalonSRX(1);
+  private final TalonSRX Intake = new TalonSRX(2);
+  private final TalonSRX Color_Spinner = new TalonSRX(9);
+
 
   private final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
   private final Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
@@ -67,20 +78,30 @@ public class Robot extends TimedRobot {
   @Override
 	public void teleopInit(){
 		/* Ensure motor output is neutral during init */
-		_leftMaster.set(ControlMode.PercentOutput, 0);
-		_rightMaster.set(ControlMode.PercentOutput, 0);
+		//_leftMaster.set(ControlMode.PercentOutput, 0);
+		///_rightMaster.set(ControlMode.PercentOutput, 0);
 
 		/* Factory Default all hardware to prevent unexpected behaviour */
-		_leftMaster.configFactoryDefault();
-		_rightMaster.configFactoryDefault();
+		//_leftMaster.configFactoryDefault();
+		//_rightMaster.configFactoryDefault();
 		
 		/* Set Neutral mode */
-		_leftMaster.setNeutralMode(NeutralMode.Brake);
-		_rightMaster.setNeutralMode(NeutralMode.Brake);
-		
+		//_leftMaster.setNeutralMode(NeutralMode.Brake);
+		//_rightMaster.setNeutralMode(NeutralMode.Brake);
+		_leftMaster.setIdleMode(IdleMode.kBrake);
+		_rightMaster.setIdleMode(IdleMode.kBrake);
+
 		/* Configure output direction */
 		_leftMaster.setInverted(true);
 		_rightMaster.setInverted(false);
+
+		//ledStrip.set(0);
+
+		Elevator_Butt.follow(Elevator_Top);
+		Elevator_Butt.setInverted(true);
+
+
+
 
 		gyro.reset();
 
@@ -106,12 +127,14 @@ public class Robot extends TimedRobot {
 		turn = Deadband(turn, 0.4);
 		SmartDashboard.putNumber("Pre-Throttle", throttle);
 		throttle = (throttle - 1) / 2;
-		boolean servoButton = _gamepad.getRawButton(2);
+		boolean servoButtonDown = _gamepad.getRawButton(9);
+		boolean servoButtonUp = _gamepad.getRawButton(7);
 		Color detectedColor = m_colorSensor.getColor();
-		boolean bruh = _gamepad.getRawButton(3);
-		boolean bruh2 = _gamepad.getRawButton(4);
-		double bruhTurn = 0;
-		
+		int POV = _gamepad.getPOV();
+		boolean intakeButton = _gamepad.getRawButton(2);
+		boolean outakeButton = _gamepad.getRawButton(3);
+
+
 		double IR = m_colorSensor.getIR();
 		int proximity = m_colorSensor.getProximity();
 	
@@ -125,6 +148,8 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("Analog voltage" ,analog.getVoltage());
     	SmartDashboard.putNumber("IR", IR);
 		SmartDashboard.putNumber("Proximity", proximity);
+		SmartDashboard.putNumber("POV", POV);
+
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 
 		String colorString;
@@ -132,14 +157,19 @@ public class Robot extends TimedRobot {
 
 		if (match.color == kBlueTarget) {
 		colorString = "Blue";
+		//ledStrip.set(0.83);
 		} else if (match.color == kRedTarget) {
 		colorString = "Red";
+		//ledStrip.set(0.61);
 		} else if (match.color == kGreenTarget) {
 		colorString = "Green";
+		//ledStrip.set(0.77);
 		} else if (match.color == kYellowTarget) {
 		colorString = "Yellow";
+		//ledStrip.set(0.69);
 		} else {
 		colorString = "Unknown";
+		//ledStrip.set(0.83);
 		}
 
 		SmartDashboard.putNumber("Red", detectedColor.red);
@@ -148,11 +178,33 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("Confidence", match.confidence);
 		SmartDashboard.putString("Detected Color", colorString);
 
-		if (servoButton) {
-			BruhServo.setAngle(75);
+		/* if (servoButtonUp) {
+			
+			BruhServo.setAngle(BruhServo.getAngle() + 1);
+			
 		}
-		else {
-			BruhServo.setAngle(5);
+		if (servoButtonDown) {
+			
+			BruhServo.setAngle(BruhServo.getAngle() - 1);
+			
+		} */
+		
+		if (POV == 0) {
+			Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+		}
+		if (POV == 180) {
+			Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+		}
+		if (POV == -1) {
+			Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+		}
+
+		if (intakeButton) {
+			Intake.set(ControlMode.PercentOutput, 0.5, DemandType.ArbitraryFeedForward, 0);
+		} else if (outakeButton) {
+			Intake.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+		} else {
+			Intake.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
 		}
 		SmartDashboard.putBoolean("ServoButton", servoButton);
 
@@ -168,41 +220,45 @@ public class Robot extends TimedRobot {
 		} else{
 			isForward = false;
 		}
-		
-		if (bruh) {
-			if(!isTurn){				
-				gyro.reset();
-				bruhTurn = gyro.getAngle() - 90;
-				isTurn = true;
-			} else {				
-				if(bruhTurn != gyro.getAngle()){
-					turn = -(gyro.getAngle() * STEER_K);
-				}
-			}			
-		}
-		SmartDashboard.putNumber("turn after gyro", turn);
-		SmartDashboard.putNumber("BruhTurn", bruhTurn);
-		SmartDashboard.putBoolean("isTurn", isTurn);
 
 		if (auto)
         {
+			Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+
+		} else {
+			Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+		}
+		
+		
+		//SmartDashboard.putNumber("turn after gyro", turn);
+
+	/* 	if (auto)
+        {
+			Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+
+
           if (m_LimelightHasValidTarget){
 				_leftMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, +m_LimelightSteerCommand);
 				_rightMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, -m_LimelightSteerCommand);
-	
+				//ledStrip.set(-0.09);
+
           } else {
 				_leftMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, -0);
 				_rightMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, +0);
-
+				//ledStrip.set(0.87);
           }
         } else  {
 			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle );
 			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
+
+			Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+
 		}
 
 		SmartDashboard.putBoolean("isForward", isForward);
+		*/
 	}
-
+ 
 	/** Deadband 5 percent, used on the gamepad */
 	double Deadband(double value, double deadband) {
 
