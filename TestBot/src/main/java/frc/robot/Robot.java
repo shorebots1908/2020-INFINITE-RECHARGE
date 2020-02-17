@@ -74,10 +74,10 @@ public class Robot extends TimedRobot {
 
 
   // Drive PIDS
-  final double STEER_K = 0.03;                    // how hard to turn toward the target
-  final double DRIVE_K = 0.26;                    // how hard to drive fwd toward the target
+  final double STEER_K = 0.05;                    // how hard to turn toward the target
+  final double DRIVE_K = 0.30;                    // how hard to drive fwd toward the target
   final double DESIRED_TARGET_AREA = 3.0;         // Area of the target when the robot reaches the wall
-  final double MAX_DRIVE = 0.6;                   // Simple speed limit so we don't drive too fast
+  final double MAX_DRIVE = 0.5;                   // Simple speed limit so we don't drive too fast
 
   @Override
 	public void teleopInit(){
@@ -92,8 +92,8 @@ public class Robot extends TimedRobot {
 		/* Set Neutral mode */
 		//_leftMaster.setNeutralMode(NeutralMode.Brake);
 		//_rightMaster.setNeutralMode(NeutralMode.Brake);
-		_leftMaster.setIdleMode(IdleMode.kBrake);
-		_rightMaster.setIdleMode(IdleMode.kBrake);
+		_leftMaster.setIdleMode(IdleMode.kCoast);
+		_rightMaster.setIdleMode(IdleMode.kCoast);
 		Climb.setNeutralMode(NeutralMode.Brake);
 
 		/* Configure output direction */
@@ -132,12 +132,12 @@ public class Robot extends TimedRobot {
 		turn = Deadband(turn, 0.4);
 		SmartDashboard.putNumber("Pre-Throttle", throttle);
 		throttle = (throttle - 1) / 2;
-		boolean servoButtonDown = _gamepad.getRawButton(9);
-		boolean servoButtonUp = _gamepad.getRawButton(7);
+		//boolean servoButtonDown = _gamepad.getRawButton(9);
+		boolean servoButton = _gamepad.getRawButton(2);
 		Color detectedColor = m_colorSensor.getColor();
 		int POV = _gamepad.getPOV();
-		boolean intakeButton = _gamepad.getRawButton(2);
-		boolean outakeButton = _gamepad.getRawButton(3);
+		//boolean intakeButton = _gamepad.getRawButton(2);
+		//boolean outakeButton = _gamepad.getRawButton(3);
 		
 		boolean climbUp = _gamepad.getRawButton(8);
 		boolean climbDown = _gamepad.getRawButton(10);
@@ -185,11 +185,11 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("Confidence", match.confidence);
 		SmartDashboard.putString("Detected Color", colorString);
 
-		if (servoButtonUp) {			
+		if (servoButton) {			
 			BruhServo.setAngle(90);		
 		}
 		else {			
-			BruhServo.setAngle(10);			
+			BruhServo.setAngle(20);			
 		}
 
 		
@@ -197,8 +197,10 @@ public class Robot extends TimedRobot {
 		if(climbUp){
 			Climb.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
 		}
-		if(climbDown){
+		else if(climbDown){
 			Climb.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+		} else {
+			Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
 		}
 		
 		if (POV == 0) {
@@ -211,16 +213,16 @@ public class Robot extends TimedRobot {
 			Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
 		}
 
-		if (intakeButton) {
+		/* if (intakeButton) {
 			Intake.set(ControlMode.PercentOutput, 0.5, DemandType.ArbitraryFeedForward, 0);
 		} else if (outakeButton) {
 			Intake.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
 		} else {
 			Intake.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
-		}
+		} */
 		//SmartDashboard.putBoolean("ServoButton", servoButton);
 
-		if (forward > 0 && turn == 0) {
+		if (forward != 0 && turn == 0) {
 			if(!isForward){
 				gyro.reset();
 				isForward = true;
