@@ -15,17 +15,19 @@ import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
 
-import com.revrobotics.CANSparkMax;
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorSensorV3;
+import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
@@ -39,6 +41,8 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 public class Robot extends TimedRobot {
   private final CANSparkMax _leftMaster = new CANSparkMax(7, MotorType.kBrushless);
   private final CANSparkMax _rightMaster = new CANSparkMax(8, MotorType.kBrushless);
+  DifferentialDrive _diffDrive = new DifferentialDrive(_leftMaster, _rightMaster);
+
   private final Joystick _gamepad = new Joystick(0);
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
@@ -73,7 +77,7 @@ public class Robot extends TimedRobot {
   final double STEER_K = 0.03;                    // how hard to turn toward the target
   final double DRIVE_K = 0.26;                    // how hard to drive fwd toward the target
   final double DESIRED_TARGET_AREA = 3.0;         // Area of the target when the robot reaches the wall
-  final double MAX_DRIVE = 0.7;                   // Simple speed limit so we don't drive too fast
+  final double MAX_DRIVE = 0.6;                   // Simple speed limit so we don't drive too fast
 
   @Override
 	public void teleopInit(){
@@ -90,9 +94,10 @@ public class Robot extends TimedRobot {
 		//_rightMaster.setNeutralMode(NeutralMode.Brake);
 		_leftMaster.setIdleMode(IdleMode.kBrake);
 		_rightMaster.setIdleMode(IdleMode.kBrake);
+		Climb.setNeutralMode(NeutralMode.Brake);
 
 		/* Configure output direction */
-		_leftMaster.setInverted(true);
+		_leftMaster.setInverted(false);
 		_rightMaster.setInverted(false);
 
 		//ledStrip.set(0);
@@ -123,7 +128,7 @@ public class Robot extends TimedRobot {
 		double turn = _gamepad.getTwist();
 		double throttle = _gamepad.getThrottle();
 		boolean auto = _gamepad.getRawButton(1);		
-		forward = -Deadband(forward, 0.05);
+		forward = Deadband(forward, 0.05);
 		turn = Deadband(turn, 0.4);
 		SmartDashboard.putNumber("Pre-Throttle", throttle);
 		throttle = (throttle - 1) / 2;
@@ -133,7 +138,9 @@ public class Robot extends TimedRobot {
 		int POV = _gamepad.getPOV();
 		boolean intakeButton = _gamepad.getRawButton(2);
 		boolean outakeButton = _gamepad.getRawButton(3);
-
+		
+		boolean climbUp = _gamepad.getRawButton(8);
+		boolean climbDown = _gamepad.getRawButton(10);
 
 		double IR = m_colorSensor.getIR();
 		int proximity = m_colorSensor.getProximity();
@@ -178,16 +185,21 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("Confidence", match.confidence);
 		SmartDashboard.putString("Detected Color", colorString);
 
-		/* if (servoButtonUp) {
-			
-			BruhServo.setAngle(BruhServo.getAngle() + 1);
-			
+		if (servoButtonUp) {			
+			BruhServo.setAngle(90);		
 		}
-		if (servoButtonDown) {
-			
-			BruhServo.setAngle(BruhServo.getAngle() - 1);
-			
-		} */
+		else {			
+			BruhServo.setAngle(10);			
+		}
+
+		
+
+		if(climbUp){
+			Climb.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+		}
+		if(climbDown){
+			Climb.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+		}
 		
 		if (POV == 0) {
 			Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
@@ -206,9 +218,9 @@ public class Robot extends TimedRobot {
 		} else {
 			Intake.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
 		}
-		SmartDashboard.putBoolean("ServoButton", servoButton);
+		//SmartDashboard.putBoolean("ServoButton", servoButton);
 
-		if (forward != 0 && turn == 0) {
+		if (forward > 0 && turn == 0) {
 			if(!isForward){
 				gyro.reset();
 				isForward = true;
@@ -221,42 +233,43 @@ public class Robot extends TimedRobot {
 			isForward = false;
 		}
 
-		if (auto)
+		/* if (auto)
         {
 			Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
 
 		} else {
 			Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
-		}
+		} */
 		
 		
 		//SmartDashboard.putNumber("turn after gyro", turn);
 
-	/* 	if (auto)
+	 	if (auto)
         {
-			Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
-
-
+			//Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
           if (m_LimelightHasValidTarget){
-				_leftMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, +m_LimelightSteerCommand);
-				_rightMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, -m_LimelightSteerCommand);
+				//_leftMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, +m_LimelightSteerCommand);
+				//_rightMaster.set(ControlMode.PercentOutput, m_LimelightDriveCommand, DemandType.ArbitraryFeedForward, -m_LimelightSteerCommand);
+				_diffDrive.arcadeDrive(m_LimelightDriveCommand,m_LimelightSteerCommand);
 				//ledStrip.set(-0.09);
 
           } else {
-				_leftMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, -0);
-				_rightMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, +0);
+				//_leftMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, -0);
+				//_rightMaster.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, +0);
+				_diffDrive.arcadeDrive(0,0);
 				//ledStrip.set(0.87);
           }
         } else  {
-			_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle );
-			_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
+			//_leftMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, +turn * throttle );
+			//_rightMaster.set(ControlMode.PercentOutput, forward * throttle, DemandType.ArbitraryFeedForward, -turn * throttle);
+			_diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
 
 			Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
 
 		}
 
 		SmartDashboard.putBoolean("isForward", isForward);
-		*/
+		
 	}
  
 	/** Deadband 5 percent, used on the gamepad */
