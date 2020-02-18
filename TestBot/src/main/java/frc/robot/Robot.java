@@ -24,6 +24,9 @@ import edu.wpi.first.wpilibj.util.Color;
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorSensorV3;
+import com.revrobotics.ControlType;
+import com.revrobotics.CANEncoder;
+import com.revrobotics.CANPIDController;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -42,6 +45,9 @@ public class Robot extends TimedRobot {
   private final CANSparkMax _leftMaster = new CANSparkMax(7, MotorType.kBrushless);
   private final CANSparkMax _rightMaster = new CANSparkMax(8, MotorType.kBrushless);
   DifferentialDrive _diffDrive = new DifferentialDrive(_leftMaster, _rightMaster);
+  private CANPIDController leftPid,rightPid;
+  private CANEncoder encoderLeft,encoderRight;
+  public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM, maxVel, minVel, maxAcc, allowedErr;
 
   private final Joystick _gamepad = new Joystick(0);
   private boolean m_LimelightHasValidTarget = false;
@@ -105,7 +111,27 @@ public class Robot extends TimedRobot {
 		Elevator_Butt.follow(Elevator_Top);
 		Elevator_Butt.setInverted(true);
 
+		leftPid = _leftMaster.getPIDController();
+		rightPid = _rightMaster.getPIDController();
+		encoderLeft = _leftMaster.getEncoder();
+		encoderRight = _rightMaster.getEncoder();
+		kP = 5e-5; 
+		kI = 1e-6;
+		kD = 0; 
+		kIz = 0; 
+		kFF = 0.000156; 
+		kMaxOutput = 1; 
+		kMinOutput = -1;
+		maxRPM = 5700;
 
+		rightPid.setP(kP);
+		rightPid.setI(kI);
+		rightPid.setD(kD);
+		rightPid.setIZone(kIz);
+		rightPid.setFF(kFF);
+		rightPid.setOutputRange(kMinOutput, kMaxOutput);
+
+		SmartDashboard.putBoolean("Mode", true);
 
 
 		gyro.reset();
@@ -144,7 +170,19 @@ public class Robot extends TimedRobot {
 
 		double IR = m_colorSensor.getIR();
 		int proximity = m_colorSensor.getProximity();
-	
+
+	    double setPoint, processVariable;
+    boolean mode = SmartDashboard.getBoolean("Mode", false);
+    if(mode) {
+      setPoint = SmartDashboard.getNumber("Set Velocity", 0);
+      rightPid.setReference(setPoint, ControlType.kVelocity);
+      processVariable = encoderRight.getVelocity();
+    } else {
+	  setPoint = SmartDashboard.getNumber("Set Position", 0);
+	  rightPid.setReference(setPoint, ControlType.kSmartMotion);
+	  processVariable = encoderRight.getPosition();
+	}
+	  
 
 		SmartDashboard.putNumber("Gryo angle", gyro.getRate());
 		SmartDashboard.putNumber("Throttle", throttle);
@@ -156,6 +194,11 @@ public class Robot extends TimedRobot {
     	SmartDashboard.putNumber("IR", IR);
 		SmartDashboard.putNumber("Proximity", proximity);
 		SmartDashboard.putNumber("POV", POV);
+		SmartDashboard.putNumber("Left Encoder", encoderLeft.getPosition());
+		SmartDashboard.putNumber("Right PID", encoderRight.getPosition());
+		SmartDashboard.putNumber("SetPoint", setPoint);
+		SmartDashboard.putNumber("Process Variable", processVariable);
+		SmartDashboard.putNumber("Output", _rightMaster.getAppliedOutput());
 
 		/* Arcade Drive using PercentOutput along with Arbitrary Feed Forward supplied by turn */
 
