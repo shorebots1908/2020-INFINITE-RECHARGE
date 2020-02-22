@@ -23,6 +23,7 @@ import com.revrobotics.CANEncoder;
 import com.revrobotics.CANPIDController;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.ControlType;
+import com.revrobotics.SparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
@@ -45,6 +46,7 @@ public class Robot extends TimedRobot {
   DifferentialDrive diff_Drive;
 
   public Joystick joystick1 = new Joystick(0);
+  public Joystick joystick2 = new Joystick(1);
 
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
@@ -59,12 +61,12 @@ public class Robot extends TimedRobot {
   private final ColorMatch m_colorMatcher = new ColorMatch();
   // public Spark ledStrip = new Spark(1);
 
-  private final TalonSRX Shooter = new TalonSRX(6);
-  private final TalonSRX Elevator_Top = new TalonSRX(5);
+  private final TalonSRX Shooter = new TalonSRX(5);
+  private final TalonSRX Elevator_Top = new TalonSRX(6);
   private final TalonSRX Elevator_Butt = new TalonSRX(4);
   private final TalonSRX Climb = new TalonSRX(1);
-  private final TalonSRX Intake = new TalonSRX(2);
-  private final TalonSRX Color_Spinner = new TalonSRX(9);
+  private final CANSparkMax Intake = new CANSparkMax(2, MotorType.kBrushless);
+  private final CANSparkMax Color_Spinner = new CANSparkMax(9, MotorType.kBrushless);
 
   private final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
   private final Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
@@ -94,7 +96,7 @@ public class Robot extends TimedRobot {
 
     Climb.setNeutralMode(NeutralMode.Brake);
     Elevator_Butt.follow(Elevator_Top);
-    Elevator_Butt.setInverted(true);
+    Elevator_Butt.setInverted(false);
 
     gyro.reset();
 
@@ -121,11 +123,16 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Pre-Throttle", throttle);
     throttle = (throttle - 1) / 2;
     boolean servoButton = joystick1.getRawButton(2);
+    boolean driveToWheel = joystick2.getRawButton(1);
 
-    int POV = joystick1.getPOV();
+    int POV = joystick2.getPOV();
 
     boolean climbUp = joystick1.getRawButton(8);
     boolean climbDown = joystick1.getRawButton(10);
+
+    double intakeButton = joystick2.getRawAxis(2);
+    boolean bruhtakeButton = joystick2.getRawButton(5); 
+
 
     double IR = m_colorSensor.getIR();
     int proximity = m_colorSensor.getProximity();
@@ -136,6 +143,12 @@ public class Robot extends TimedRobot {
       BruhServo.setAngle(90);
     } else {
       BruhServo.setAngle(20);
+    }
+
+    if (driveToWheel) {
+      if (proximity < 100) {
+        forward = -0.3;
+      } else {forward = 0;}
     }
 
     if (climbUp) {
@@ -155,6 +168,16 @@ public class Robot extends TimedRobot {
     if (POV == -1) {
       Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
+
+    if (intakeButton == -1) {
+      Intake.set(0.5);
+     } else if (bruhtakeButton) {
+      Intake.set(-0.5);
+    } else {
+      Intake.set(0);
+    }
+
+
     /// BUTTONS END ///
 
     /// DRIVE START ///
