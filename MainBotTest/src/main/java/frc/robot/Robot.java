@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Servo;
+import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
@@ -39,7 +40,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 public class Robot extends TimedRobot {
   private static final int leftID = 8;
   private static final int rightID = 7;
-  private CANSparkMax left_motor, right_motor;
+  private CANSparkMax left_motor, right_motor, Intake, Color_Spinner;
   private CANPIDController left_pidController, right_pidController;
   private CANEncoder left_encoder, right_encoder;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM, maxVel, minVel, maxAcc, allowedErr;
@@ -52,21 +53,19 @@ public class Robot extends TimedRobot {
   private double m_LimelightDriveCommand = 0.0;
   private double m_LimelightSteerCommand = 0.0;
   private boolean isForward = false;
-  private boolean isTurn = false;
+  //private boolean isTurn = false;
   Gyro gyro = new ADXRS450_Gyro();
   Servo BruhServo = new Servo(0);
   AnalogInput analog = new AnalogInput(0);
   private final I2C.Port i2cPort = I2C.Port.kOnboard;
   private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
   private final ColorMatch m_colorMatcher = new ColorMatch();
-  // public Spark ledStrip = new Spark(1);
+  public Spark ledStrip = new Spark(1);
 
   private final TalonSRX Shooter = new TalonSRX(5);
   private final TalonSRX Elevator_Top = new TalonSRX(6);
   private final TalonSRX Elevator_Butt = new TalonSRX(4);
   private final TalonSRX Climb = new TalonSRX(1);
-  private final CANSparkMax Intake = new CANSparkMax(2, MotorType.kBrushless);
-  private final CANSparkMax Color_Spinner = new CANSparkMax(9, MotorType.kBrushless);
 
   private final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
   private final Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
@@ -84,6 +83,9 @@ public class Robot extends TimedRobot {
     // initialize motor
     left_motor = new CANSparkMax(leftID, MotorType.kBrushless);
     right_motor = new CANSparkMax(rightID, MotorType.kBrushless);
+    Intake = new CANSparkMax(2, MotorType.kBrushless);
+    Color_Spinner = new CANSparkMax(9, MotorType.kBrushless);
+
     // diff_Drive = new DifferentialDrive(left_motor, right_motor);
 
     left_motor.restoreFactoryDefaults();
@@ -130,8 +132,8 @@ public class Robot extends TimedRobot {
     boolean climbUp = joystick1.getRawButton(8);
     boolean climbDown = joystick1.getRawButton(10);
 
-    double intakeButton = joystick2.getRawAxis(2);
-    boolean bruhtakeButton = joystick2.getRawButton(5); 
+    boolean intakeButton = joystick1.getRawButton(3);
+    boolean bruhtakeButton = joystick1.getRawButton(5); 
 
 
     double IR = m_colorSensor.getIR();
@@ -165,15 +167,20 @@ public class Robot extends TimedRobot {
     if (POV == 180) {
       Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
     }
+    if (POV == 270){
+      Color_Spinner.set(1);
+    }
+    if(POV == 90){
+      Color_Spinner.set(-1);
+    }
     if (POV == -1) {
       Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      Color_Spinner.set(0);
     }
 
-    if (intakeButton == -1) {
+    if (intakeButton) {
       Intake.set(0.5);
-     } else if (bruhtakeButton) {
-      Intake.set(-0.5);
-    } else {
+     }  else {
       Intake.set(0);
     }
 
@@ -197,6 +204,13 @@ public class Robot extends TimedRobot {
     }
 
     if (auto) {
+      Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+    } else {
+      // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
+      Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+    }
+
+    /* if (auto) {
       if (m_LimelightHasValidTarget) {
         forward = m_LimelightDriveCommand;
         turn = m_LimelightSteerCommand;
@@ -209,7 +223,7 @@ public class Robot extends TimedRobot {
     } else {
       // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
       Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
-    }
+    } */
 
     setPoint = Deadband(forward * -maxVel, 100);
     setPointTurn = Deadband(turn * -maxVel, 190);
@@ -356,19 +370,19 @@ public class Robot extends TimedRobot {
 
     if (match.color == kBlueTarget) {
       colorString = "Blue";
-      // ledStrip.set(0.83);
+      ledStrip.set(0.83);
     } else if (match.color == kRedTarget) {
       colorString = "Red";
-      // ledStrip.set(0.61);
+      ledStrip.set(0.61);
     } else if (match.color == kGreenTarget) {
       colorString = "Green";
-      // ledStrip.set(0.77);
+      ledStrip.set(0.77);
     } else if (match.color == kYellowTarget) {
       colorString = "Yellow";
-      // ledStrip.set(0.69);
+      ledStrip.set(0.69);
     } else {
       colorString = "Unknown";
-      // ledStrip.set(0.83);
+      ledStrip.set(0.83);
     }
 
     SmartDashboard.putNumber("Red", detectedColor.red);
