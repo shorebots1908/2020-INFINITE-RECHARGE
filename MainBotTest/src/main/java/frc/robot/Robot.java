@@ -37,6 +37,8 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
+import edu.wpi.first.wpilibj.Timer;
+
 public class Robot extends TimedRobot {
   private static final int leftID = 8;
   private static final int rightID = 7;
@@ -45,6 +47,7 @@ public class Robot extends TimedRobot {
   private CANEncoder left_encoder, right_encoder;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM, maxVel, minVel, maxAcc, allowedErr;
   DifferentialDrive diff_Drive;
+  private double startTime;
 
   public Joystick joystick1 = new Joystick(0);
   public Joystick joystick2 = new Joystick(1);
@@ -108,6 +111,44 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kYellowTarget);
 
   }
+  @Override
+  public void autonomousInit() {
+    startTime = Timer.getFPGATimestamp(); // get the match start time
+    ledStrip.set(-0.77);   
+  }
+
+  @Override
+  public void autonomousPeriodic() {
+    double time = Timer.getFPGATimestamp();
+    System.out.println(time - startTime);
+
+
+    
+    // kick up the climber so the intake falls down, then pull back the climber arms
+    if (time - startTime <= 2) {
+      Climb.set(ControlMode.PercentOutput, -0.2, DemandType.ArbitraryFeedForward, 0);
+    } else if ((time - startTime > 2) && (time - startTime < 4)) {
+      Climb.set(ControlMode.PercentOutput, 0.2, DemandType.ArbitraryFeedForward, 0);
+    } else {
+      Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+    }
+    // start the elevator and shoot for 10 seconds
+    if (time - startTime < 10) {
+        Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+        Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+    } else {
+        Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+        Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+    }
+   // drive forward for 2 seconds
+    if ((time - startTime > 10) && (time - startTime < 12)) {
+        left_motor.set(0.3);
+        right_motor.set(0.3);
+    } else {
+        left_motor.set(0);
+        right_motor.set(0);
+    }  
+  }
 
   @Override
   public void teleopPeriodic() {
@@ -155,8 +196,10 @@ public class Robot extends TimedRobot {
 
     if (climbUp) {
       Climb.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+      ledStrip.set(0.57);
     } else if (climbDown) {
       Climb.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+      ledStrip.set(0.57);
     } else {
       Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
@@ -168,10 +211,10 @@ public class Robot extends TimedRobot {
       Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
     }
     if (POV == 270){
-      Color_Spinner.set(1);
+      Color_Spinner.set(0.5);
     }
     if(POV == 90){
-      Color_Spinner.set(-1);
+      Color_Spinner.set(-0.5);
     }
     if (POV == -1) {
       Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
@@ -382,7 +425,7 @@ public class Robot extends TimedRobot {
       ledStrip.set(0.69);
     } else {
       colorString = "Unknown";
-      ledStrip.set(0.83);
+      ledStrip.set(0.03);
     }
 
     SmartDashboard.putNumber("Red", detectedColor.red);
