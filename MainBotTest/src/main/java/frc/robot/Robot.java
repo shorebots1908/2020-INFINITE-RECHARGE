@@ -76,8 +76,8 @@ public class Robot extends TimedRobot {
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
   // Limelight PIDs
-  final double STEER_K = 0.05; // how hard to turn toward the target
-  final double DRIVE_K = 0.30; // how hard to drive fwd toward the target
+  final double STEER_K = 0.01; // how hard to turn toward the target
+  final double DRIVE_K = 0.3; // how hard to drive fwd toward the target
   final double DESIRED_TARGET_AREA = 3.0; // Area of the target when the robot reaches the wall
   final double MAX_DRIVE = 0.5; // Simple speed limit so we don't drive too fast
 
@@ -174,16 +174,18 @@ public class Robot extends TimedRobot {
     boolean climbDown = joystick1.getRawButton(10);
 
     boolean intakeButton = joystick1.getRawButton(3);
-    boolean bruhtakeButton = joystick1.getRawButton(5); 
+    boolean bruhtakeButton = joystick1.getRawButton(5);
+    boolean shooterButton = joystick1.getRawButton(4);
+    boolean shooterButtonSlow = joystick1.getRawButton(6); 
 
 
     double IR = m_colorSensor.getIR();
     int proximity = m_colorSensor.getProximity();
-    getColor();
+    
 
     /// BUTTONS START///
     if (servoButton) {
-      BruhServo.setAngle(90);
+      BruhServo.setAngle(80);
     } else {
       BruhServo.setAngle(20);
     }
@@ -212,9 +214,11 @@ public class Robot extends TimedRobot {
     }
     if (POV == 270){
       Color_Spinner.set(0.5);
+      getColor();
     }
     if(POV == 90){
       Color_Spinner.set(-0.5);
+      getColor();
     }
     if (POV == -1) {
       Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
@@ -246,27 +250,29 @@ public class Robot extends TimedRobot {
       isForward = false;
     }
 
-    if (auto) {
+    if (shooterButton) {
       Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
-    } else {
+    } else if(shooterButtonSlow) {
+      Shooter.set(ControlMode.PercentOutput, -0.5, DemandType.ArbitraryFeedForward, 0);
+    }else {
       // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
       Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
 
-    /* if (auto) {
+    if (auto) {
       if (m_LimelightHasValidTarget) {
         forward = m_LimelightDriveCommand;
         turn = m_LimelightSteerCommand;
-        // ledStrip.set(-0.09);
+        ledStrip.set(-0.09);
       } else {
         forward = 0;
         turn = 0;
-        // ledStrip.set(0.87);
+        ledStrip.set(0.87);
       }
     } else {
       // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
-      Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
-    } */
+      //Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+    }
 
     setPoint = Deadband(forward * -maxVel, 100);
     setPointTurn = Deadband(turn * -maxVel, 190);
