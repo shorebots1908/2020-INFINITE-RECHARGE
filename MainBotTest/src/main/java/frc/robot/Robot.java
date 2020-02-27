@@ -76,7 +76,7 @@ public class Robot extends TimedRobot {
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
   // Limelight PIDs
-  final double STEER_K = 0.01; // how hard to turn toward the target
+  final double STEER_K = 0.001; // how hard to turn toward the target
   final double DRIVE_K = 0.3; // how hard to drive fwd toward the target
   final double DESIRED_TARGET_AREA = 3.0; // Area of the target when the robot reaches the wall
   final double MAX_DRIVE = 0.5; // Simple speed limit so we don't drive too fast
@@ -227,10 +227,9 @@ public class Robot extends TimedRobot {
 
     if (intakeButton) {
       Intake.set(0.5);
-     } else if {
-     (intakeSensor.getValue() >= 600); 
-     } 
-     else {
+     } else if(intakeSensor.getValue() >= 600){
+      Intake.set(0);
+     } else {
       Intake.set(0);
     }
 
@@ -295,8 +294,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Throttle Math", forward * throttle);
     SmartDashboard.putNumber("forward", forward);
     SmartDashboard.putNumber("turn", turn);
-    SmartDashboard.putNumber("Analog value", analog.getValue());
-    SmartDashboard.putNumber("Analog voltage", analog.getVoltage());
+    SmartDashboard.putNumber("Analog value", intakeSensor.getValue());
+    SmartDashboard.putNumber("Analog voltage", intakeSensor.getVoltage());
     SmartDashboard.putNumber("IR", IR);
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("POV", POV);
