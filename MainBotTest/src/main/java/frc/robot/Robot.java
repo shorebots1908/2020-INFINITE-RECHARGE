@@ -119,21 +119,21 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    double time = Timer.getFPGATimestamp();
-    System.out.println(time - startTime);
+    double timePassed = Timer.getFPGATimestamp() - startTime;
+    System.out.println(timePassed);
 
 
     
     // kick up the climber so the intake falls down, then pull back the climber arms
-    if (time - startTime <= 2) {
+    if (timePassed <= 2) {
       Climb.set(ControlMode.PercentOutput, -0.2, DemandType.ArbitraryFeedForward, 0);
-    } else if ((time - startTime > 2) && (time - startTime < 4)) {
+    } else if ((timePassed > 2) && (timePassed < 4)) {
       Climb.set(ControlMode.PercentOutput, 0.2, DemandType.ArbitraryFeedForward, 0);
     } else {
       Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
     // start the elevator and shoot for 10 seconds
-    if (time - startTime < 10) {
+    if (timePassed < 10) {
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
         Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
     } else {
@@ -141,7 +141,7 @@ public class Robot extends TimedRobot {
         Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
    // drive forward for 2 seconds
-    if ((time - startTime > 10) && (time - startTime < 12)) {
+    if ((timePassed > 10) && (timePassed < 12)) {
         left_motor.set(0.3);
         right_motor.set(0.3);
     } else {
