@@ -162,7 +162,7 @@ public class Robot extends TimedRobot {
 		boolean servoButton = _gamepad.getRawButton(2);
 		Color detectedColor = m_colorSensor.getColor();
 		int POV = _gamepad.getPOV();
-		//boolean intakeButton = _gamepad.getRawButton(2);
+		boolean intakeButton = _gamepad.getRawButton(2);
 		//boolean outakeButton = _gamepad.getRawButton(3);
 		
 		boolean climbUp = _gamepad.getRawButton(8);

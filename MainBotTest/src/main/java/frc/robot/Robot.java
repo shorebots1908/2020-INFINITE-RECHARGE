@@ -59,7 +59,7 @@ public class Robot extends TimedRobot {
   //private boolean isTurn = false;
   Gyro gyro = new ADXRS450_Gyro();
   Servo BruhServo = new Servo(0);
-  AnalogInput analog = new AnalogInput(0);
+  AnalogInput intakeSensor = new AnalogInput(0);
   private final I2C.Port i2cPort = I2C.Port.kOnboard;
   private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
   private final ColorMatch m_colorMatcher = new ColorMatch();
@@ -223,7 +223,10 @@ public class Robot extends TimedRobot {
 
     if (intakeButton) {
       Intake.set(0.5);
-     }  else {
+     } else if {
+     (intakeSensor.getValue() >= 600); 
+     } 
+     else {
       Intake.set(0);
     }
 
@@ -252,6 +255,9 @@ public class Robot extends TimedRobot {
       // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
       Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
+
+
+
 
     /* if (auto) {
       if (m_LimelightHasValidTarget) {
