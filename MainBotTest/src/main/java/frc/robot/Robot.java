@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.AnalogInput;
@@ -52,6 +53,7 @@ public class Robot extends TimedRobot {
   public Joystick joystick1 = new Joystick(0);
   public Joystick joystick2 = new Joystick(1);
 
+  NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
   private boolean m_LimelightHasValidTarget = false;
   private double m_LimelightDriveCommand = 0.0;
   private double m_LimelightSteerCommand = 0.0;
@@ -76,8 +78,8 @@ public class Robot extends TimedRobot {
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
   // Limelight PIDs
-  final double STEER_K = 0.001; // how hard to turn toward the target
-  final double DRIVE_K = 0.3; // how hard to drive fwd toward the target
+  final double STEER_K = 0.02; // how hard to turn toward the target
+  final double DRIVE_K = 0.03; // how hard to drive fwd toward the target
   final double DESIRED_TARGET_AREA = 3.0; // Area of the target when the robot reaches the wall
   final double MAX_DRIVE = 0.5; // Simple speed limit so we don't drive too fast
 
@@ -185,9 +187,11 @@ public class Robot extends TimedRobot {
 
     /// BUTTONS START///
     if (servoButton) {
-      BruhServo.setAngle(80);
+      //BruhServo.setAngle(15);
+      limelight.getEntry("pipeline").setNumber(1);
     } else {
-      BruhServo.setAngle(20);
+      //BruhServo.setAngle(80);
+      limelight.getEntry("pipeline").setNumber(0);
     }
 
     if (driveToWheel) {
@@ -207,10 +211,10 @@ public class Robot extends TimedRobot {
     }
 
     if (POV == 0) {
-      Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+      Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
     }
     if (POV == 180) {
-      Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+      Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
     }
     if (POV == 270){
       Color_Spinner.set(0.5);
@@ -221,17 +225,40 @@ public class Robot extends TimedRobot {
       getColor();
     }
     if (POV == -1) {
-      Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      //Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      if(intakeSensor.getValue() >= 600){
+        Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+      } else {
+        Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      }
       Color_Spinner.set(0);
+
+      if (shooterButton) {
+        Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+        Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+      } else if(shooterButtonSlow) {
+        Shooter.set(ControlMode.PercentOutput, -0.5, DemandType.ArbitraryFeedForward, 0);
+        Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+      }else {
+        // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
+        Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      }
     }
 
-    if (intakeButton) {
+    /* if (intakeButton && intakeSensor.getValue() <= 600) {
       Intake.set(0.5);
-     } else if(intakeSensor.getValue() >= 600){
-      Intake.set(0);
      } else {
       Intake.set(0);
-    }
+    } */
+
+    /* if (shooterButton) {
+      Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+    } else if(shooterButtonSlow) {
+      Shooter.set(ControlMode.PercentOutput, -0.5, DemandType.ArbitraryFeedForward, 0);
+    }else {
+      // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
+      Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+    } */
 
 
     /// BUTTONS END ///
@@ -239,39 +266,34 @@ public class Robot extends TimedRobot {
     /// DRIVE START ///
     // setPoint = SmartDashboard.getNumber("Set Velocity", 0);
 
-    if (forward != 0 && turn == 0) {
+    //// GYRO NEEDS TO BE REPOSITIONED ON ROBOT /////
+    /* if (forward < 0 && turn == 0) {
       if (!isForward) {
         gyro.reset();
         isForward = true;
       } else {
         if (gyro.getAngle() != 0) {
-          turn = -(gyro.getAngle() * STEER_K);
+          turn = (gyro.getAngle() * STEER_K);
         }
       }
     } else {
       isForward = false;
-    }
-
-    if (shooterButton) {
-      Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
-    } else if(shooterButtonSlow) {
-      Shooter.set(ControlMode.PercentOutput, -0.5, DemandType.ArbitraryFeedForward, 0);
-    }else {
-      // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
-      Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
-    }
+    } */
 
     if (auto) {
       if (m_LimelightHasValidTarget) {
         forward = m_LimelightDriveCommand;
         turn = m_LimelightSteerCommand;
+        SmartDashboard.putNumber("LimelightForward", m_LimelightDriveCommand);
+        SmartDashboard.putNumber("LimelightTurn", m_LimelightSteerCommand);
         ledStrip.set(-0.09);
       } else {
-        forward = 0;
-        turn = 0;
+        //forward = 0;
+        //turn = 0;
         ledStrip.set(0.87);
       }
     } else {
+      //ledStrip.set(0.87);
       // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
       //Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
@@ -321,10 +343,20 @@ public class Robot extends TimedRobot {
   }
 
   public void Update_Limelight_Tracking() {
-    double tv = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tv").getDouble(0);
-    double tx = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
-    double ty = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
-    double ta = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ta").getDouble(0);
+    double tv = limelight.getEntry("tv").getDouble(0);
+    double tx = limelight.getEntry("tx").getDouble(0);
+    double ty = limelight.getEntry("ty").getDouble(0);
+    double ta = limelight.getEntry("ta").getDouble(0);
+    double pipeline = limelight.getEntry("pipeline").getDouble(0);
+    double pipelineTarget = 0;
+
+    SmartDashboard.putNumber("Valid Targets", tv);
+    SmartDashboard.putNumber("Horizontal Offset", tx);
+    SmartDashboard.putNumber("Vertical Offset", ty);
+    SmartDashboard.putNumber("Target Area", ta);
+    SmartDashboard.putNumber("Pipeline", pipeline);
+
+    boolean auto = joystick1.getRawButton(1);
 
     if (tv < 1.0) {
       m_LimelightHasValidTarget = false;
@@ -335,12 +367,29 @@ public class Robot extends TimedRobot {
 
     m_LimelightHasValidTarget = true;
 
+    if(pipeline == 0){
+      //// TRACKING BALL ////
+      
+      BruhServo.setAngle(80);
+      if(auto){
+        Intake.set(0.3);
+      }else {
+        Intake.set(0);
+      }
+      
+      pipelineTarget = DESIRED_TARGET_AREA - ty;
+    } else if(pipeline == 1){
+      //// TRACKING TARGET ////
+      BruhServo.setAngle(20);
+      pipelineTarget = DESIRED_TARGET_AREA - ta;
+    }
     // Start with proportional steering
     double steer_cmd = tx * STEER_K;
     m_LimelightSteerCommand = steer_cmd;
 
     // try to drive forward until the target area reaches our desired area
-    double drive_cmd = (DESIRED_TARGET_AREA - ta) * DRIVE_K;
+    double drive_cmd = pipelineTarget * DRIVE_K;
+    
 
     // don't let the robot drive too fast into the goal
     if (drive_cmd > MAX_DRIVE) {
