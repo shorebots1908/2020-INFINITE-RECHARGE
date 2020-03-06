@@ -80,12 +80,6 @@ public class Robot extends TimedRobot {
   private final Color kRedTarget = ColorMatch.makeColor(0.561, 0.232, 0.114);
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
-  // Limelight PIDs
-  final double STEER_K = 0.02; // how hard to turn toward the target
-  final double DRIVE_K = 0.03; // how hard to drive fwd toward the target
-  final double DESIRED_TARGET_AREA = 3.0; // Area of the target when the robot reaches the wall
-  final double MAX_DRIVE = 0.4; // Simple speed limit so we don't drive too fast
-
   @Override
   public void robotInit() {
     // initialize motor
@@ -94,7 +88,7 @@ public class Robot extends TimedRobot {
     Intake = new CANSparkMax(2, MotorType.kBrushless);
     Color_Spinner = new CANSparkMax(9, MotorType.kBrushless);
 
-    // diff_Drive = new DifferentialDrive(left_motor, right_motor);
+    //diff_Drive = new DifferentialDrive(left_motor, right_motor);
 
     left_motor.restoreFactoryDefaults();
     right_motor.restoreFactoryDefaults();
@@ -189,10 +183,10 @@ public class Robot extends TimedRobot {
 
     /// BUTTONS START///
     if (servoButton) {
-      BruhServo.setAngle(20);
+      BruhServo.setAngle(30);
       limelight.getEntry("pipeline").setNumber(1);
     } else {
-      BruhServo.setAngle(80);
+      BruhServo.setAngle(100);
       limelight.getEntry("pipeline").setNumber(0);
     }
 
@@ -205,10 +199,10 @@ public class Robot extends TimedRobot {
 
     if (climbUp) {
       Climb.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
-      ledStrip.set(0.57);
+      //ledStrip.set(0.57);
     } else if (climbDown) {
       Climb.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
-      ledStrip.set(0.57);
+      //ledStrip.set(0.57);
     } else {
       Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
@@ -229,8 +223,9 @@ public class Robot extends TimedRobot {
     }
     if (POV == -1) {
       //Default State of POV (2nd Joystick)
-      if(intakeSensor.getValue() >= 600 && intakeSensor.getValue() <= 1600){
+      if(intakeSensor.getValue() >= 700 && intakeSensor.getValue() <= 1600){
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+        ledStrip.set(0.77);
       } else {
         Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
       }
@@ -242,9 +237,9 @@ public class Robot extends TimedRobot {
       } else if(shooterButtonSlow) {
         Shooter.set(ControlMode.PercentOutput, -0.5, DemandType.ArbitraryFeedForward, 0);
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
-      } else if(shooterSensor.getValue() <= 600 && limelight.getEntry("pipeline").getDouble(0) == 1){
+      } else if(shooterSensor.getValue() <= 700 && limelight.getEntry("pipeline").getDouble(0) == 1){
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
-      } else if(shooterSensor.getValue() >= 600 && limelight.getEntry("pipeline").getDouble(0) == 0){
+      } else if(shooterSensor.getValue() >= 700 && limelight.getEntry("pipeline").getDouble(0) == 0){
         Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
       } else {
         Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
@@ -282,6 +277,7 @@ public class Robot extends TimedRobot {
         turn = m_LimelightSteerCommand;
         SmartDashboard.putNumber("LimelightForward", m_LimelightDriveCommand);
         SmartDashboard.putNumber("LimelightTurn", m_LimelightSteerCommand);
+        //diff_Drive.arcadeDrive(-m_LimelightSteerCommand, -m_LimelightDriveCommand);
         //ledStrip.set(-0.09);
       } else {
         //forward = 0;
@@ -289,9 +285,7 @@ public class Robot extends TimedRobot {
         //ledStrip.set(0.87);
       }
     } else {
-      //ledStrip.set(0.87);
-      // diffDrive.arcadeDrive(forward * throttle, -turn * throttle);
-      //Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      
     }
 
     setPoint = Deadband(forward * -maxVel, 100);
@@ -299,7 +293,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Joystick", setPoint);
     SmartDashboard.putNumber("Joystick Turn", setPointTurn);
     left_pidController.setReference(setPoint + setPointTurn, ControlType.kVelocity);
-    right_pidController.setReference(setPoint - setPointTurn, ControlType.kVelocity);
+    right_pidController.setReference(setPoint - setPointTurn, ControlType.kVelocity);    
     leftVelocity = left_encoder.getVelocity();
     rightVelocity = right_encoder.getVelocity();
 
@@ -321,7 +315,7 @@ public class Robot extends TimedRobot {
 
     SmartDashboard.putBoolean("isRed", IsRedAlliance);
 
-    SmartDashboard.putNumber("SetPoint", setPoint);
+    //SmartDashboard.putNumber("SetPoint", setPoint);
     SmartDashboard.putNumber("Left Vel", leftVelocity);
     SmartDashboard.putNumber("Right Vel", rightVelocity);
     SmartDashboard.putNumber("Output", left_motor.getAppliedOutput());
@@ -348,6 +342,13 @@ public class Robot extends TimedRobot {
     double ta = limelight.getEntry("ta").getDouble(0);
     double pipeline = limelight.getEntry("pipeline").getDouble(0);
     double pipelineTarget = 0;
+
+    // Limelight PIDs
+    double STEER_K = 0.0; // how hard to turn toward the target
+    double DRIVE_K = 0.0; // how hard to drive fwd toward the target
+    final double DESIRED_TARGET_AREA = 6.0; // Area of the target when the robot reaches the wall
+    final double DESIRED_BALL_AREA = 1.0; // Area of the target when the robot reaches the ball
+    final double MAX_DRIVE = 0.5; // Simple speed limit so we don't drive too fast
 
     SmartDashboard.putNumber("Valid Targets", tv);
     SmartDashboard.putNumber("Horizontal Offset", tx);
@@ -376,13 +377,17 @@ public class Robot extends TimedRobot {
       }else {
         Intake.set(0);
       }
-      
-      pipelineTarget = DESIRED_TARGET_AREA - ty;
+      STEER_K = 0.02; // how hard to turn toward the target
+      DRIVE_K = 0.03;     
+      pipelineTarget = DESIRED_BALL_AREA - ty;
+
     } else if(pipeline == 1){
       //// TRACKING TARGET ////
       //BruhServo.setAngle(20);
       //Move Balls closer to shooter while tracking
-      pipelineTarget = DESIRED_TARGET_AREA - ta;
+      STEER_K = 0.08; // how hard to turn toward the target
+      DRIVE_K = 0.1;
+      pipelineTarget = -(DESIRED_TARGET_AREA - ta);
     }
     // Start with proportional steering
     double steer_cmd = tx * STEER_K;
@@ -419,7 +424,7 @@ public class Robot extends TimedRobot {
 
     // Smart Motion Coefficients
     maxVel = 2500; // rpm
-    maxAcc = 100;
+    maxAcc = 400;
 
     // set PID coefficients
     left_pidController.setP(kP);
