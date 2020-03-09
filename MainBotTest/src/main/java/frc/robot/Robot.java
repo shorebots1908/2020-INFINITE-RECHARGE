@@ -43,7 +43,7 @@ import edu.wpi.first.wpilibj.Timer;
 public class Robot extends TimedRobot {
   private static final int leftID = 8;
   private static final int rightID = 7;
-  private CANSparkMax left_motor, right_motor, Intake, Color_Spinner;
+  private CANSparkMax left_motor, right_motor, Intake, Color_Spinner,Climb;
   private CANPIDController left_pidController, right_pidController;
   private CANEncoder left_encoder, right_encoder;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM, maxVel, minVel, maxAcc, allowedErr;
@@ -65,6 +65,7 @@ public class Robot extends TimedRobot {
   Servo BruhServo = new Servo(0);
   AnalogInput intakeSensor = new AnalogInput(0);
   AnalogInput shooterSensor = new AnalogInput(1);
+  AnalogInput climbSensor = new AnalogInput(2);
   private final I2C.Port i2cPort = I2C.Port.kOnboard;
   private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
   private final ColorMatch m_colorMatcher = new ColorMatch();
@@ -73,7 +74,7 @@ public class Robot extends TimedRobot {
   private final TalonSRX Shooter = new TalonSRX(5);
   private final TalonSRX Elevator_Top = new TalonSRX(6);
   private final TalonSRX Elevator_Butt = new TalonSRX(4);
-  private final TalonSRX Climb = new TalonSRX(1);
+  //private final TalonSRX Climb = new TalonSRX(1);
 
   private final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
   private final Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
@@ -87,18 +88,20 @@ public class Robot extends TimedRobot {
     right_motor = new CANSparkMax(rightID, MotorType.kBrushless);
     Intake = new CANSparkMax(2, MotorType.kBrushless);
     Color_Spinner = new CANSparkMax(9, MotorType.kBrushless);
+    Climb = new CANSparkMax(1, MotorType.kBrushless);
 
     //diff_Drive = new DifferentialDrive(left_motor, right_motor);
 
-    left_motor.restoreFactoryDefaults();
-    right_motor.restoreFactoryDefaults();
+    // left_motor.restoreFactoryDefaults();
+    // right_motor.restoreFactoryDefaults();
 
     left_motor.setInverted(true);
     right_motor.setInverted(false);
 
     pidInit();
 
-    Climb.setNeutralMode(NeutralMode.Brake);
+    //Climb.setNeutralMode(NeutralMode.Brake);
+    Climb.setIdleMode(IdleMode.kBrake);
     Elevator_Butt.follow(Elevator_Top);
     Elevator_Butt.setInverted(false);
 
@@ -109,43 +112,48 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kRedTarget);
     m_colorMatcher.addColorMatch(kYellowTarget);
 
-    IsRedAlliance = FMS.getEntry("IsRedAlliance").getBoolean(false);
   }
   @Override
   public void autonomousInit() {
     startTime = Timer.getFPGATimestamp(); // get the match start time
-    ledStrip.set(-0.77);   
+    ledStrip.set(getTeamColor(false)); 
+    left_motor.setIdleMode(IdleMode.kBrake);
+    right_motor.setIdleMode(IdleMode.kBrake);
+      
   }
 
   @Override
   public void autonomousPeriodic() {
     double timePassed = Timer.getFPGATimestamp() - startTime;
     System.out.println(timePassed);
+
+
     
     // kick up the climber so the intake falls down, then pull back the climber arms
-    if (timePassed <= 2) {
+    /* if (timePassed <= 2) {
       Climb.set(ControlMode.PercentOutput, -0.2, DemandType.ArbitraryFeedForward, 0);
     } else if ((timePassed > 2) && (timePassed < 4)) {
       Climb.set(ControlMode.PercentOutput, 0.2, DemandType.ArbitraryFeedForward, 0);
     } else {
       Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+    } */
+    // drive forward for 2 seconds
+    if ((timePassed > 0) && (timePassed <= 1)) {
+      left_motor.set(0.3);
+      right_motor.set(0.3);
+    } else {
+        left_motor.set(0);
+        right_motor.set(0);
     }
     // start the elevator and shoot for 10 seconds
-    if (timePassed < 10) {
+    if (timePassed > 1) {
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
         Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
     } else {
         Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
         Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
     }
-   // drive forward for 2 seconds
-    if ((timePassed > 10) && (timePassed < 12)) {
-        left_motor.set(0.3);
-        right_motor.set(0.3);
-    } else {
-        left_motor.set(0);
-        right_motor.set(0);
-    }  
+     
   }
 
   @Override
@@ -171,10 +179,15 @@ public class Robot extends TimedRobot {
     boolean climbUp = joystick1.getRawButton(8);
     boolean climbDown = joystick1.getRawButton(10);
 
-    boolean intakeButton = joystick1.getRawButton(3);
-    boolean bruhtakeButton = joystick1.getRawButton(5);
+    boolean climbUpFast = joystick1.getRawButton(7);
+    boolean climbDownFast = joystick1.getRawButton(9);
+
+
+    boolean intakeButton = joystick2.getRawButton(4);
+    boolean intakeOutButton = joystick2.getRawButton(2);
     boolean shooterButton = joystick1.getRawButton(4);
     boolean shooterButtonSlow = joystick1.getRawButton(6); 
+    boolean snapshotButton = joystick2.getRawButton(3);
 
 
     double IR = m_colorSensor.getIR();
@@ -190,50 +203,62 @@ public class Robot extends TimedRobot {
       limelight.getEntry("pipeline").setNumber(0);
     }
 
-    if (driveToWheel) {
-      getColor();
-      if (proximity < 100) {
-        forward = -0.3;
-      } else {forward = 0;}
-    }
+    
 
-    if (climbUp) {
-      Climb.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
-      //ledStrip.set(0.57);
-    } else if (climbDown) {
-      Climb.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
-      //ledStrip.set(0.57);
+    
+    if (climbSensor.getValue() > 800){
+      //Stop Climb is sensor is active
+      Climb.set(0.3);
+      ledStrip.set(0.57);
     } else {
-      Climb.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+      
+      if (climbUp) {
+        Climb.set(0.5);
+        ledStrip.set(0.57);
+      } else if (climbDown) {
+        Climb.set(-0.5);
+        ledStrip.set(0.57);
+      } else if (climbUpFast) {
+        Climb.set(1);
+        ledStrip.set(0.57);
+      } else if (climbDownFast) {
+        Climb.set(-1);
+        ledStrip.set(0.57);
+      } else {
+        Climb.set(0);
+      }
+
     }
+    
 
     if (POV == 0) {
       Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
-    }
-    if (POV == 180) {
+    } else if (POV == 180) {
       Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
-    }
-    if (POV == 270){
+    } else if (POV == 270){
       Color_Spinner.set(0.5);
-      getColor();
-    }
-    if(POV == 90){
+      ledStrip.set(getWheelColor());
+    } else if(POV == 90){
       Color_Spinner.set(-0.5);
-      getColor();
-    }
-    if (POV == -1) {
+      ledStrip.set(getWheelColor());
+    } else if (POV == -1) {
+      
       //Default State of POV (2nd Joystick)
-      if(intakeSensor.getValue() >= 700 && intakeSensor.getValue() <= 1600){
+      if(intakeSensor.getValue() >= 500){
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
         ledStrip.set(0.77);
+      }else if(shooterSensor.getValue() >= 700 && intakeSensor.getValue() >= 500  && limelight.getEntry("pipeline").getDouble(0) == 0){
+        Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
       } else {
         Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
+        ledStrip.set(getTeamColor(m_LimelightHasValidTarget));
       }
       Color_Spinner.set(0);
 
       if (shooterButton) {
         Shooter.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
+        limelight.getEntry("snapshot").setNumber(1);
       } else if(shooterButtonSlow) {
         Shooter.set(ControlMode.PercentOutput, -0.5, DemandType.ArbitraryFeedForward, 0);
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
@@ -241,16 +266,24 @@ public class Robot extends TimedRobot {
         Elevator_Top.set(ControlMode.PercentOutput, 1, DemandType.ArbitraryFeedForward, 0);
       } else if(shooterSensor.getValue() >= 700 && limelight.getEntry("pipeline").getDouble(0) == 0){
         Elevator_Top.set(ControlMode.PercentOutput, -1, DemandType.ArbitraryFeedForward, 0);
+      } else if(shooterSensor.getValue() >= 700 && intakeSensor.getValue() >= 500  && limelight.getEntry("pipeline").getDouble(0) == 0){
+        Elevator_Top.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
       } else {
         Shooter.set(ControlMode.PercentOutput, 0, DemandType.ArbitraryFeedForward, 0);
       }
     }
 
-    /* if (intakeButton && intakeSensor.getValue() <= 600) {
-      Intake.set(0.5);
+    if(snapshotButton){
+      limelight.getEntry("snapshot").setNumber(1);
+    }
+
+    if (intakeButton) {
+      Intake.set(0.3);
+     } else if(intakeOutButton){
+      Intake.set(-0.5);
      } else {
       Intake.set(0);
-    } */
+    } 
 
     /// BUTTONS END ///
 
@@ -288,6 +321,15 @@ public class Robot extends TimedRobot {
       
     }
 
+    if (driveToWheel) {
+      //ledStrip.set(getWheelColor());
+      if (proximity < 100) {
+        forward = -0.3;
+      } else {
+        forward = -0.1;
+        ledStrip.set(getWheelColor());}
+    }
+
     setPoint = Deadband(forward * -maxVel, 100);
     setPointTurn = Deadband(turn * -maxVel, 190);
     SmartDashboard.putNumber("Joystick", setPoint);
@@ -308,6 +350,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("turn", turn);
     SmartDashboard.putNumber("Intake Sensor value", intakeSensor.getValue());
     SmartDashboard.putNumber("Shooter Sensor value", shooterSensor.getValue());
+    SmartDashboard.putNumber("Climb Sensor value", climbSensor.getValue());
     //SmartDashboard.putNumber("Analog voltage", intakeSensor.getVoltage());
     SmartDashboard.putNumber("IR", IR);
     SmartDashboard.putNumber("Proximity", proximity);
@@ -362,13 +405,14 @@ public class Robot extends TimedRobot {
       m_LimelightHasValidTarget = false;
       m_LimelightDriveCommand = 0.0;
       m_LimelightSteerCommand = 0.0;
-      ledStrip.set(getTeamColor(false));
+      //ledStrip.set(getTeamColor(false));
+
       return;
     }
 
     m_LimelightHasValidTarget = true;
-    ledStrip.set(getTeamColor(true));
-
+    //ledStrip.set(getTeamColor(true));
+    
     if(pipeline == 0){
       //// TRACKING BALL ////      
       //BruhServo.setAngle(80);
@@ -441,16 +485,17 @@ public class Robot extends TimedRobot {
     right_pidController.setFF(kFF);
     right_pidController.setOutputRange(kMinOutput, kMaxOutput);
 
-    int smartMotionSlot = 0;
-    left_pidController.setSmartMotionMaxVelocity(maxVel, smartMotionSlot);
-    left_pidController.setSmartMotionMinOutputVelocity(minVel, smartMotionSlot);
-    left_pidController.setSmartMotionMaxAccel(maxAcc, smartMotionSlot);
-    left_pidController.setSmartMotionAllowedClosedLoopError(allowedErr, smartMotionSlot);
+    int smartMotionSlotLeft = 0;
+    int smartMotionSlotRight = 1;
+    left_pidController.setSmartMotionMaxVelocity(maxVel, smartMotionSlotLeft);
+    left_pidController.setSmartMotionMinOutputVelocity(minVel, smartMotionSlotLeft);
+    left_pidController.setSmartMotionMaxAccel(maxAcc, smartMotionSlotLeft);
+    left_pidController.setSmartMotionAllowedClosedLoopError(allowedErr, smartMotionSlotLeft);
 
-    right_pidController.setSmartMotionMaxVelocity(maxVel, smartMotionSlot);
-    right_pidController.setSmartMotionMinOutputVelocity(minVel, smartMotionSlot);
-    right_pidController.setSmartMotionMaxAccel(maxAcc, smartMotionSlot);
-    right_pidController.setSmartMotionAllowedClosedLoopError(allowedErr, smartMotionSlot);
+    right_pidController.setSmartMotionMaxVelocity(maxVel, smartMotionSlotRight);
+    right_pidController.setSmartMotionMinOutputVelocity(minVel, smartMotionSlotRight);
+    right_pidController.setSmartMotionMaxAccel(maxAcc, smartMotionSlotRight);
+    right_pidController.setSmartMotionAllowedClosedLoopError(allowedErr, smartMotionSlotRight);
 
     // display PID coefficients on SmartDashboard
     SmartDashboard.putNumber("P Gain", kP);
@@ -470,36 +515,41 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Set Velocity", 0);
   }
 
-  public void getColor() {
+  public double getWheelColor() {
     String colorString;
+    double ledColor;
     Color detectedColor = m_colorSensor.getColor();
     ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
 
     if (match.color == kBlueTarget) {
       colorString = "Blue";
-      ledStrip.set(0.83);
+      ledColor = 0.83;
     } else if (match.color == kRedTarget) {
       colorString = "Red";
-      ledStrip.set(0.61);
+      ledColor = 0.61;
     } else if (match.color == kGreenTarget) {
       colorString = "Green";
-      ledStrip.set(0.77);
+      ledColor = 0.77;
     } else if (match.color == kYellowTarget) {
       colorString = "Yellow";
-      ledStrip.set(0.69);
+      ledColor = 0.69;
     } else {
       colorString = "Unknown";
-      ledStrip.set(0.03);
+      ledColor = 0.03;
     }
-
+    
     SmartDashboard.putNumber("Red", detectedColor.red);
     SmartDashboard.putNumber("Green", detectedColor.green);
     SmartDashboard.putNumber("Blue", detectedColor.blue);
     SmartDashboard.putNumber("Confidence", match.confidence);
+    SmartDashboard.putNumber("LED Color", ledColor);
     SmartDashboard.putString("Detected Color", colorString);
+
+    return ledColor;
   }
 
   public double getTeamColor(boolean bFlashing){    
+    IsRedAlliance = FMS.getEntry("IsRedAlliance").getBoolean(false);
     if(IsRedAlliance){
       if(bFlashing){return -0.11;}else{return 0.61;}    
     } else {
