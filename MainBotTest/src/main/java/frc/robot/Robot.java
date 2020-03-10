@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
   private static final int rightID = 7;
   private CANSparkMax left_motor, right_motor, Intake, Color_Spinner,Climb;
   private CANPIDController left_pidController, right_pidController;
-  private CANEncoder left_encoder, right_encoder;
+  private CANEncoder left_encoder, right_encoder, climb_encoder;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM, maxVel, minVel, maxAcc, allowedErr;
   DifferentialDrive diff_Drive;
   private double startTime;
@@ -157,11 +157,23 @@ public class Robot extends TimedRobot {
   }
 
   @Override
+  public void disabledInit() {
+    //Climb.setIdleMode(IdleMode.kCoast);
+  }
+
+  @Override
+  public void teleopInit() {
+    Climb.setIdleMode(IdleMode.kBrake);
+    left_motor.setIdleMode(IdleMode.kCoast);
+    right_motor.setIdleMode(IdleMode.kCoast);
+  }
+
+  @Override
   public void teleopPeriodic() {
 
     Update_Limelight_Tracking();
 
-    double setPoint, setPointTurn, leftVelocity, rightVelocity;
+    double setPoint, setPointTurn, leftVelocity, rightVelocity, climbVelocity, climbPosition;
     /* Gamepad processing */
     double forward = joystick1.getY();
     double turn = joystick1.getTwist();
@@ -201,33 +213,6 @@ public class Robot extends TimedRobot {
     } else {
       BruhServo.setAngle(100);
       limelight.getEntry("pipeline").setNumber(0);
-    }
-
-    
-
-    
-    if (climbSensor.getValue() > 800){
-      //Stop Climb is sensor is active
-      Climb.set(0.3);
-      ledStrip.set(0.57);
-    } else {
-      
-      if (climbUp) {
-        Climb.set(0.5);
-        ledStrip.set(0.57);
-      } else if (climbDown) {
-        Climb.set(-0.5);
-        ledStrip.set(0.57);
-      } else if (climbUpFast) {
-        Climb.set(1);
-        ledStrip.set(0.57);
-      } else if (climbDownFast) {
-        Climb.set(-1);
-        ledStrip.set(0.57);
-      } else {
-        Climb.set(0);
-      }
-
     }
     
 
@@ -283,12 +268,35 @@ public class Robot extends TimedRobot {
       Intake.set(-0.5);
      } else {
       Intake.set(0);
-    } 
+    }
+    
+    if (climbSensor.getValue() > 600){
+      //Stop Climb is sensor is active      
+      Climb.set(0);
+      ledStrip.set(0.57);
+    } else {
+      
+      if (climbUp) {
+        Climb.set(0.5);
+        //ledStrip.set(0.57);
+      } else if (climbDown) {
+        Climb.set(-0.5);
+        //ledStrip.set(0.57);
+      } else if (climbUpFast) {
+        Climb.set(1);
+        //ledStrip.set(0.57);
+      } else if (climbDownFast) {
+        Climb.set(-1);
+        //ledStrip.set(0.57);
+      } else {
+        Climb.set(0);
+      }
+
+    }
 
     /// BUTTONS END ///
 
     /// DRIVE START ///
-    // setPoint = SmartDashboard.getNumber("Set Velocity", 0);
 
     //// GYRO NEEDS TO BE REPOSITIONED ON ROBOT /////
     /* if (forward < 0 && turn == 0) {
@@ -312,13 +320,7 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("LimelightTurn", m_LimelightSteerCommand);
         //diff_Drive.arcadeDrive(-m_LimelightSteerCommand, -m_LimelightDriveCommand);
         //ledStrip.set(-0.09);
-      } else {
-        //forward = 0;
-        //turn = 0;
-        //ledStrip.set(0.87);
       }
-    } else {
-      
     }
 
     if (driveToWheel) {
@@ -339,6 +341,9 @@ public class Robot extends TimedRobot {
     leftVelocity = left_encoder.getVelocity();
     rightVelocity = right_encoder.getVelocity();
 
+    //climbVelocity = climb_encoder.getVelocity();
+    //climbPosition = climb_encoder.getPosition();
+
     /// DRIVE END ///
 
     /// SMART DASHBOARD UPDATE ///
@@ -351,14 +356,14 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Intake Sensor value", intakeSensor.getValue());
     SmartDashboard.putNumber("Shooter Sensor value", shooterSensor.getValue());
     SmartDashboard.putNumber("Climb Sensor value", climbSensor.getValue());
-    //SmartDashboard.putNumber("Analog voltage", intakeSensor.getVoltage());
+    //SmartDashboard.putNumber("Climb Velocity", climbVelocity);
+    //SmartDashboard.putNumber("Climb Position", climbPosition);
     SmartDashboard.putNumber("IR", IR);
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("POV", POV);
 
     SmartDashboard.putBoolean("isRed", IsRedAlliance);
 
-    //SmartDashboard.putNumber("SetPoint", setPoint);
     SmartDashboard.putNumber("Left Vel", leftVelocity);
     SmartDashboard.putNumber("Right Vel", rightVelocity);
     SmartDashboard.putNumber("Output", left_motor.getAppliedOutput());
@@ -366,16 +371,11 @@ public class Robot extends TimedRobot {
   }
 
   double Deadband(double value, double deadband) {
-    /* Upper deadband */
-    if (value >= +deadband) {
+    if (value >= +deadband || value <= -deadband) {
       return value;
-    }
-    /* Lower deadband */
-    if (value <= -deadband) {
-      return value;
-    }
-    /* Outside deadband */
-    return 0;
+    } else {
+      return 0;
+    }    
   }
 
   public void Update_Limelight_Tracking() {
@@ -415,7 +415,6 @@ public class Robot extends TimedRobot {
     
     if(pipeline == 0){
       //// TRACKING BALL ////      
-      //BruhServo.setAngle(80);
       if(auto){
         Intake.set(0.3);
       }else {
@@ -427,7 +426,6 @@ public class Robot extends TimedRobot {
 
     } else if(pipeline == 1){
       //// TRACKING TARGET ////
-      //BruhServo.setAngle(20);
       //Move Balls closer to shooter while tracking
       STEER_K = 0.08; // how hard to turn toward the target
       DRIVE_K = 0.1;
@@ -467,8 +465,8 @@ public class Robot extends TimedRobot {
     maxRPM = 5700;
 
     // Smart Motion Coefficients
-    maxVel = 2500; // rpm
-    maxAcc = 400;
+    maxVel = 2700; // rpm
+    maxAcc = 200;
 
     // set PID coefficients
     left_pidController.setP(kP);
